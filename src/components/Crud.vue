@@ -20,17 +20,28 @@
                 <div class="form-body">
                     <div class="input-wrapper">
                         <input class="input" type="text" v-model="userName" placeholder="Nome do Usuário">
+
                     </div>
+                    <small v-if="errors.name != ''" class="has-errors"> {{errors.name }} </small>
                     <div class="input-wrapper">
                         <input class="input" type="text" v-model="userEmail" placeholder="Email do Usuário">
                     </div>
+                    <small v-if="errors.email != ''" class="has-errors"> {{errors.email }} </small>
                     <div v-if="userId == null" class="input-wrapper">
                         <div class="password-wrapper">
                             <input :type="passwordType" class="input" v-model="userPassword" placeholder="Senha do Usuário">
                             <button class='showPassword' @click="passwordType = passwordType === 'password'? 'text': 'password' ">{{passwordType === 'password'? "Mostrar": "Esconder"}} Senha</button>
                         </div>
+                    </div> 
+                    <small v-if="errors.password != ''" class="has-errors"> {{errors.password }} </small>
+                    <div v-if="userId == null" class="input-wrapper">
+                        <div class="password-wrapper">
+                            <input :type="passwordType" class="input" v-model="userCheckPassword" placeholder="Confirme a Senha">
+                            <button class='showPassword' @click="passwordType = passwordType === 'password'? 'text': 'password' ">{{passwordType === 'password'? "Mostrar": "Esconder"}} Senha</button>
+                        </div>
                     </div>
-                     <button v-else class="default-button" @click="clearVars()">Novo</button>
+                    <small v-if="errors.checkPassword != ''" class="has-errors"> {{errors.checkPassword }} </small>
+                    <button v-if="userId != null" class="default-button" @click="clearVars()">Novo</button>
                     <button class="save-button" @click="saveClickHandler()">Save</button>
                 </div>
 
@@ -98,6 +109,8 @@
 import Api from "@/service/fakeapi";
 import Modal from '@/components/Modal.vue';
 
+const regexEmail = /([!#-'*+/-9=?A-Z^-~-]+(\.[!#-'*+/-9=?A-Z^-~-]+)*|"([!#-[^-~ \t]|(\\[\t -~]))+")@([0-9A-Za-z]([0-9A-Za-z-]{0,61}[0-9A-Za-z])?(\.[0-9A-Za-z]([0-9A-Za-z-]{0,61}[0-9A-Za-z])?)*|\[((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|IPv6:((((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):){6}|::((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):){5}|[0-9A-Fa-f]{0,4}::((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):){4}|(((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):)?(0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}))?::((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):){3}|(((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):){0,2}(0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}))?::((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):){2}|(((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):){0,3}(0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}))?::(0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):|(((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):){0,4}(0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}))?::)((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):(0|[1-9A-Fa-f][0-9A-Fa-f]{0,3})|(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3})|(((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):){0,5}(0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}))?::(0|[1-9A-Fa-f][0-9A-Fa-f]{0,3})|(((0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}):){0,6}(0|[1-9A-Fa-f][0-9A-Fa-f]{0,3}))?::)|(?!IPv6:)[0-9A-Za-z-]*[0-9A-Za-z]:[!-Z^-~]+)])/;
+    
 export default {
     components: {
         Modal
@@ -109,6 +122,7 @@ export default {
             userName : "",
             userEmail : '',
             userPassword : "",
+            userCheckPassword : "",
             userId : null,
             error : false,
             passwordType: "password",
@@ -116,50 +130,83 @@ export default {
             mensage : "Mensage teste",
             loadingModal: false, 
             delModal : false,
-            trakedId: 0
+            trakedId: 0,
+            errors: {name: "", email: "", password: "", checkPassword: ""}
         }
     },
     methods:{
+        checkUserInputs(){
+            let ret = true;
+            this.errors = {name: "", email: "", password: "", checkPassword: ""};
+            if(this.userName == ""){
+                ret = false;
+                this.errors.name = "Nome precisa ser preenchido"
+            }
+            if(this.userEmail == ""){
+                ret = false;
+                this.errors.email = "Email precisa ser preenchido"
+            }else if(!this.userEmail.match(regexEmail) ){
+                ret = false;
+                this.errors.email = "Email nao valido"
+            }
+            if(this.userId == null){
+                if(this.userPassword == ""){
+                    ret = false;
+                    this.errors.password = "Senha precisa ser preenchida";
+                }
+                if(this.userCheckPassword == ""){
+                    ret = false;
+                    this.errors.checkPassword = "Senha precisa ser confirmada"
+                }else if(this.userCheckPassword != this.userPassword){
+                    ret = false;
+                    this.errors.checkPassword = "As senhas informadas sao diferentes";
+                }
+            }
+            return ret;
+        },
         saveClickHandler(){
-            this.loadingModal = true;
-            if(this.userId != null) Api.updateUser(this.userId,this.formatBody(), this.error)
-            .then(
-                data => {
-                    this.users = data;
-                    console.log("success updated")
-                    this.clearVars();
-                    this.loadingModal = false;
-                    this.mensage = "Alterado com sucesso"
-                    this.messageModal = true;
-                }
-            ).catch(
-                err => {
-                    console.log(err);
-                    console.log('Error on update');
-                    this.loadingModal = false;
-                    this.mensage = "Ops, algo deu errado, verifique sua conexão e tente novamente"
-                    this.messageModal = true;
-                }
-            );
-            else Api.createUser(this.formatBody(), this.error)
-             .then(
-                data => {
-                    this.users = data;
-                    console.log("success created")
-                    this.clearVars()
-                    this.loadingModal = false;
-                    this.mensage = "Criado com sucesso"
-                    this.messageModal = true;
-                }
-            ).catch(
-                err => {
-                    console.log(err);
-                    console.log('Error on create');
-                    this.loadingModal = false;
-                    this.mensage = "Ops, algo deu errado, verifique sua conexão e tente novamente"
-                    this.messageModal = true;
-                }
-            );
+            if(this.checkUserInputs()){
+                this.loadingModal = true;
+                if(this.userId != null) Api.updateUser(this.userId,this.formatBody(), this.error)
+                .then(
+                    data => {
+                        this.users = data;
+                        console.log("success updated")
+                        this.clearVars();
+                        this.loadingModal = false;
+                        this.mensage = "Alterado com sucesso"
+                        this.messageModal = true;
+                    }
+                ).catch(
+                    err => {
+                        console.log(err);
+                        console.log('Error on update');
+                        this.loadingModal = false;
+                        this.mensage = "Ops, algo deu errado, verifique sua conexão e tente novamente"
+                        this.messageModal = true;
+                    }
+                );
+                else Api.createUser(this.formatBody(), this.error)
+                    .then(
+                    data => {
+                        this.users = data;
+                        console.log("success created")
+                        this.clearVars()
+                        this.loadingModal = false;
+                        this.mensage = "Criado com sucesso"
+                        this.messageModal = true;
+                    }
+                ).catch(
+                    err => {
+                        console.log(err);
+                        console.log('Error on create');
+                        this.loadingModal = false;
+                        this.mensage = "Ops, algo deu errado, verifique sua conexão e tente novamente"
+                        this.messageModal = true;
+                    }
+                );
+            }
+          
         },
         formatBody(){
             let ret = {
@@ -216,6 +263,7 @@ export default {
             this.userName = "";
             this.userEmail = '';
             this.userPassword = "";
+            this.userCheckPassword = "";
             this.userId = null;
         },
         deleteClickHandler(id){
@@ -252,6 +300,14 @@ export default {
 input:focus, button:focus{
         outline: none;
 }
+
+.has-errors{
+    color: red;
+    font-weight: 900;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
 .crud-wrapper{
     max-width: 100vw;
     min-height: 100vw;
